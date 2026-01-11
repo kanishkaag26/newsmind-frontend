@@ -3,6 +3,13 @@ const API_BASE_URL = 'https://newsmind-ai.onrender.com/api';
 
 // API Endpoints
 const API = {
+    baseURL: API_BASE_URL,
+    
+    // Auth endpoints
+    login: `${API_BASE_URL}/auth/login`,
+    register: `${API_BASE_URL}/auth/register`,
+    verifyToken: `${API_BASE_URL}/auth/verify`,
+    
     // Summary endpoints
     summarizeURL: `${API_BASE_URL}/summary/url`,
     summarizeText: `${API_BASE_URL}/summary/text`,
@@ -23,28 +30,40 @@ const API = {
     deleteSummary: (id) => `${API_BASE_URL}/history/summary/${id}`
 };
 
-// Helper function to make API calls
+// Helper function to make API calls with retry logic
 async function apiCall(url, options = {}) {
-    try {
-        const response = await fetch(url, {
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
+    const maxRetries = 2;
+    let lastError;
+    
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'API request failed');
             }
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.message || 'API request failed');
+            
+            return data;
+        } catch (error) {
+            lastError = error;
+            console.error(`API Error (attempt ${i + 1}):`, error);
+            
+            // Wait before retry (backend might be waking up)
+            if (i < maxRetries - 1) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
         }
-        
-        return data;
-    } catch (error) {
-        console.error('API Error:', error);
-        throw error;
     }
+    
+    throw lastError;
 }
 
 // Helper for file uploads
