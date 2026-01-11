@@ -94,14 +94,14 @@
     </div>
     
     <script>
-        const API_BASE = 'http://localhost:5000/api';
+        // ✅ FIXED: Using deployed backend URL instead of localhost
+        const API_BASE = 'https://newsmind-ai.onrender.com/api';
         
         function switchTab(tab) {
             const login = document.getElementById('login-form');
             const reg = document.getElementById('register-form');
             const tabs = document.querySelectorAll('.tab-btn');
             
-            // Clear error messages
             document.getElementById('login-error').style.display = 'none';
             document.getElementById('register-error').style.display = 'none';
             document.getElementById('register-success').style.display = 'none';
@@ -119,7 +119,7 @@
             }
         }
         
-        // Login Form Handler
+        // Login Form Handler with better error handling
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -127,9 +127,8 @@
             const errorDiv = document.getElementById('login-error');
             const submitBtn = e.target.querySelector('button[type="submit"]');
             
-            // Disable button
             submitBtn.disabled = true;
-            submitBtn.innerHTML = 'Logging in...';
+            submitBtn.innerHTML = 'Connecting to server...';
             errorDiv.style.display = 'none';
             
             try {
@@ -145,18 +144,20 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Save user info to localStorage
                     localStorage.setItem('userId', data.data.userId);
                     localStorage.setItem('userName', data.data.name);
                     localStorage.setItem('userEmail', data.data.email);
                     
-                    // Redirect to dashboard
-                    window.location.href = 'dashboard.html';
+                    submitBtn.innerHTML = 'Success! Redirecting...';
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 500);
                 } else {
                     throw new Error(data.message || 'Login failed');
                 }
             } catch (error) {
-                errorDiv.textContent = error.message;
+                console.error('Login error:', error);
+                errorDiv.textContent = 'Connection failed. Backend may be waking up, please wait 30 seconds and try again.';
                 errorDiv.style.display = 'block';
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = 'Enter Dashboard <i class="ph-bold ph-arrow-right"></i>';
@@ -173,7 +174,6 @@
             const successDiv = document.getElementById('register-success');
             const submitBtn = e.target.querySelector('button[type="submit"]');
             
-            // Disable button
             submitBtn.disabled = true;
             submitBtn.innerHTML = 'Creating Account...';
             errorDiv.style.display = 'none';
@@ -192,16 +192,13 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Save user info to localStorage
                     localStorage.setItem('userId', data.data.userId);
                     localStorage.setItem('userName', data.data.name);
                     localStorage.setItem('userEmail', data.data.email);
                     
-                    // Show success message
                     successDiv.textContent = 'Account created! Redirecting...';
                     successDiv.style.display = 'block';
                     
-                    // Redirect to dashboard after 1 second
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
                     }, 1000);
@@ -209,7 +206,8 @@
                     throw new Error(data.message || 'Registration failed');
                 }
             } catch (error) {
-                errorDiv.textContent = error.message;
+                console.error('Register error:', error);
+                errorDiv.textContent = 'Failed to create account. Backend may be waking up, please try again in 30 seconds.';
                 errorDiv.style.display = 'block';
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = 'Create Account';
